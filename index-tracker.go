@@ -15,9 +15,10 @@ import (
 )
 
 var PATCH_DIR string
+var API_PORT string
 
 func getPatch(timestamp uint64) (string, error) {
-	query := fmt.Sprintf("cat $(ls -1 | awk '$0 >= %d')", timestamp)
+	query := fmt.Sprintf("cat $(ls -1 | awk -F '-' '$1 >= %d') < /dev/null", timestamp)
 
 	cmd := exec.Command("sh", "-c", query)
 	cmd.Dir = PATCH_DIR
@@ -111,10 +112,16 @@ func gzipMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	PATCH_DIR = os.Getenv("PATCH_DIR")
+	API_PORT = os.Getenv("API_PORT")
+
 	if PATCH_DIR == "" {
 		log.Fatal("PATCH_DIR environment is not present.")
 	}
 
-	fmt.Printf("index-tracker server is listening on port 6150 for %s\n", PATCH_DIR)
-	log.Fatal(http.ListenAndServe(":6150", gzipMiddleware(http.HandlerFunc(endpointHandler))))
+	if API_PORT == "" {
+		API_PORT = "6150"
+	}
+
+	fmt.Printf("index-tracker server is listening on port %s for %s\n", API_PORT, PATCH_DIR)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", API_PORT), gzipMiddleware(http.HandlerFunc(endpointHandler))))
 }
