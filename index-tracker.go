@@ -41,7 +41,7 @@ func extractTimestampArg(path string) (uint64, error, int) {
 	timestamp, err := strconv.ParseUint(arg, 10, 64)
 
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("%s is an invalid argument, expected a UNIX timestamp", arg)), http.StatusBadRequest
+		return 0, errors.New("Invalid argument. Expected a UNIX timestamp."), http.StatusBadRequest
 	}
 
 	return timestamp, nil, 0
@@ -57,24 +57,27 @@ func endpointHandler(w http.ResponseWriter, r *http.Request) {
 
 		timestamp, err, httpErrCode := extractTimestampArg(path)
 		if err != nil {
-			http.Error(w, err.Error(), httpErrCode)
+			w.WriteHeader(httpErrCode)
+			responseCh <- err.Error()
 			return
 		}
 
 		patch, err := getPatch(timestamp)
 		if err != nil {
-			http.Error(w, "Query was failed.", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			responseCh <- "Query was failed."
 			return
 		}
+
+		contentLength := strconv.Itoa(len(patch))
+		w.Header().Set("Content-Length", contentLength)
+		w.WriteHeader(http.StatusOK)
 
 		responseCh <- patch
 	}()
 
 	select {
 	case response := <-responseCh:
-		contentLength := strconv.Itoa(len(response))
-		w.Header().Set("Content-Length", contentLength)
-		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(response))
 	case <-time.After(5 * time.Second): // timeout handling
 		w.WriteHeader(http.StatusRequestTimeout)
@@ -109,6 +112,11 @@ func gzipMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("API is healthy"))
+}
+
 func main() {
 	PATCH_DIR = os.Getenv("PATCH_DIR")
 	apiPort := os.Getenv("API_PORT")
@@ -121,6 +129,16 @@ func main() {
 		apiPort = "6150"
 	}
 
+	mux := http.NewServeMux()
+
+	// Register the handlers
+	mux.HandleFunc("/health", healthCheckHandler)
+	mux.HandleFunc("/", endpointHandler)
+
+	// Apply the gzip middleware to the entire mux
+	handler := gzipMiddleware(mux)
+
 	fmt.Printf("index-tracker server is listening on port %s for %s\n", apiPort, PATCH_DIR)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", apiPort), gzipMiddleware(http.HandlerFunc(endpointHandler))))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", apiPort), handler))
+
 }
