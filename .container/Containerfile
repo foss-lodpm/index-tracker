@@ -1,0 +1,21 @@
+# Compilation
+FROM docker.io/library/debian:bullseye-slim as build
+WORKDIR /app
+
+# Install golang
+RUN apt-get update && \
+	apt-get install -y golang && \
+	rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+RUN go build -ldflags "-s -w" index-tracker.go
+
+# Runtime
+FROM docker.io/library/debian:bullseye-slim
+
+## Get binary
+COPY --from=build /app/index-tracker /usr/local/bin/index-tracker
+
+## Start the app
+CMD ["index-tracker"]
