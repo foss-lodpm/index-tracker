@@ -1,0 +1,22 @@
+# Compilation
+FROM docker.io/library/debian:bullseye-slim as build
+WORKDIR /app
+
+# Install golang
+RUN apt-get update \
+	&& apt-get install -y golang \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN go build ./index-tracker.go 
+RUN strip ./index-tracker.go
+
+COPY . .
+
+# Runtime
+FROM docker.io/library/debian:bullseye-slim
+
+## Get binary
+COPY --from=build /app/index-tracker /usr/local/bin/index-tracker
+
+## Start the app
+CMD ["kaptan-proxy"]
