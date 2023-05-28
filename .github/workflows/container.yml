@@ -1,4 +1,4 @@
-name: build and push containers
+name: container image
 on: push
 
 concurrency:
