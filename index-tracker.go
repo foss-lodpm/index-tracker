@@ -17,7 +17,7 @@ import (
 var PATCH_DIR string
 
 func getPatch(timestamp uint64) (string, error) {
-	query := fmt.Sprintf("cat $(ls -1 | awk -F '-' '$1 >= %d') < /dev/null", timestamp)
+	query := fmt.Sprintf("cat $(ls -1 | awk -F '-' '$1 > %d') < /dev/null", timestamp)
 
 	cmd := exec.Command("sh", "-c", query)
 	cmd.Dir = PATCH_DIR
