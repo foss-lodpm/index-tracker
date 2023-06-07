@@ -1,6 +1,6 @@
 lpm repository index tracker
 ============================
-Generate SQL patches corresponding to a specified timestamp from github.com/foss-lodpm/repository-index in a quick way
+Generate SQL patches corresponding to a specified timestamp from github.com/lodosgroup/repository-index in a quick way
 
 `export PATCH_DIR={repository_index_project_root}/patches`
 
