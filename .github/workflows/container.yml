@@ -17,7 +17,7 @@ jobs:
         run: docker build --no-cache -t ozkanonur/lpm-index-tracker:latest -f .container/Containerfile .
 
       - name: Push the container image
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/stable'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           docker login --username ${{ secrets.DOCKER_HUB_USERNAME }} --password ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}  docker.io
           docker push ozkanonur/lpm-index-tracker:latest
